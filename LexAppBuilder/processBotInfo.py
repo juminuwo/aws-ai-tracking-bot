@@ -114,8 +114,9 @@ def log_update(event):
     rawObject = ""
 
     if (slots):
-        if (slots["DayPrefix"]):
-            dayPrefix = slots["DayPrefix"]
+        if ("DayPrefix" in slots):
+            if (slots["DayPrefix"]):
+                dayPrefix = slots["DayPrefix"]
 
         if ("RawValueNUMBER" in slots):
             rawValue = slots["RawValueNUMBER"]
