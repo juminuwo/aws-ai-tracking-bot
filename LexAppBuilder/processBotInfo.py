@@ -189,24 +189,25 @@ def log_update(event):
                       rawUnits, rawObject)
 
     # UPDATE AGGREGATE TABLE TO FOR TARGETS
-    category = findCategoryFromIntent(model, bot, intentName)
-    print(category)
-    print("found current category: " + category["name"])
+    if "Turnaround" not in intentName:
+        category = findCategoryFromIntent(model, bot, intentName)
+        print(category)
+        print("found current category: " + category["name"])
 
-    update = obtainItem(event["userId"], current_datetime)
+        update = obtainItem(event["userId"], current_datetime)
 
-    if update:
-        print("found current item for user")
-    else:
-        update = defaultItem(model, event["userId"], current_datetime)
-        putItem(update)
+        if update:
+            print("found current item for user")
+        else:
+            update = defaultItem(model, event["userId"], current_datetime)
+            putItem(update)
 
-    if category["name"] in update:
-        update[category["name"]] += int(rawValue)
-    else:
-        update[category["name"]] = int(rawValue)
+        if category["name"] in update:
+            update[category["name"]] += int(rawValue)
+        else:
+            update[category["name"]] = int(rawValue)
 
-    updateItem(model, update)
+        updateItem(model, update)
     return closeResponse(update)
 
 
