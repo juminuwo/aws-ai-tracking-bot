@@ -189,12 +189,12 @@ def log_update(event):
                       rawUnits, rawObject)
 
     # UPDATE AGGREGATE TABLE TO FOR TARGETS
+    update = obtainItem(event["userId"], current_datetime)
     if "Turnaround" not in intentName:
         category = findCategoryFromIntent(model, bot, intentName)
         print(category)
         print("found current category: " + category["name"])
 
-        update = obtainItem(event["userId"], current_datetime)
 
         if update:
             print("found current item for user")
