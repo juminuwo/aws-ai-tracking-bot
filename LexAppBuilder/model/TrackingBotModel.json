@@ -7,6 +7,43 @@
     "allowUserToClearMetrics": "true",
     "categories": [
       {
+        "name": "Turnaround",
+        "description": "Sends turnaround events.",
+        "verb": {
+          "prefix": [],
+          "type": "custom",
+          "values": [
+            "connected",
+            "disconnected"
+          ],
+          "prompt": "What turnaround event happened?"
+        },
+        "qty": {
+          "prefix": [],
+          "type": "custom",
+          "default": "NA",
+          "prompt": "NA"
+        },
+        "units": {
+          "type": "custom",
+          "values": [],
+          "default": "NA",
+          "prompt": "NA"
+        },
+        "object": {
+          "prefix": [],
+          "type": "custom",
+          "values": [
+            "baggage",
+            "bridge",
+            "fuelling",
+            "GPU"
+          ]
+        },
+        "confirmation": "Thank you, {object} {verb} .",
+        "cancel":"Sorry, please try again."
+      },
+      {
         "name": "Volunteer",
         "description": "Tracks how many hours you volunteer",
         "verb": {

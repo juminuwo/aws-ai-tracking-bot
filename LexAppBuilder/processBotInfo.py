@@ -20,6 +20,7 @@ model = ""
 tableRaw = ""
 tableAggregate = ""
 
+
 # Helper class to convert a DynamoDB item to JSON.
 class DecimalEncoder(json.JSONEncoder):
     def default(self, o):
@@ -30,11 +31,13 @@ class DecimalEncoder(json.JSONEncoder):
                 return int(o)
         return super(DecimalEncoder, self).default(o)
 
+
 def setTableNames(bot):
     global tableRaw
     global tableAggregate
-    tableRaw = dynamodb.Table(bot["name"]+"-Raw")
+    tableRaw = dynamodb.Table(bot["name"] + "-Raw")
     tableAggregate = dynamodb.Table(bot["name"] + "-Aggregate")
+
 
 def loadModelFromFile(name):
     global modelFileName
@@ -44,10 +47,13 @@ def loadModelFromFile(name):
         model = json.load(json_file)
         return model
 
+
 def loadModel():
     return loadModelFromFile(modelFileName)
 
+
 loadModel()
+
 
 def findCategoryFromIntent(model, bot, intent):
     categories = model["bot"]["categories"]
@@ -55,15 +61,20 @@ def findCategoryFromIntent(model, bot, intent):
         if (intent.endswith(category["name"] + bot["name"])):
             return category
 
+
 def findTargetValues(model):
     categories = model["bot"]["categories"]
     target = {}
     for category in categories:
         target[category["name"]] = {}
-        target[category["name"]]["dailyTarget"] = Decimal(category["dailyTarget"])
-        target[category["name"]]["weeklyTarget"] = Decimal(category["weeklyTarget"])
-        target[category["name"]]["monthlyTarget"] = Decimal(category["monthlyTarget"])
+        target[category["name"]]["dailyTarget"] = Decimal(
+            category["dailyTarget"])
+        target[category["name"]]["weeklyTarget"] = Decimal(
+            category["weeklyTarget"])
+        target[category["name"]]["monthlyTarget"] = Decimal(
+            category["monthlyTarget"])
     return target
+
 
 def findCategories(model):
     categories = model["bot"]["categories"]
@@ -72,8 +83,10 @@ def findCategories(model):
         target.append(category["name"])
     return target
 
+
 def setLocalDynamodb(endpointurl):
     dynamodb = boto3.resource('dynamodb', endpoint_url=endpointurl)
+
 
 def lambda_handler(event, context):
     print(json.dumps(event))
@@ -82,7 +95,10 @@ def lambda_handler(event, context):
     elif (event["invocationSource"] == "DialogCodeHook"):
         return log_dialogCodeHook(event)
     else:
-        return failedResponse(event, "Error in function - unrecognised invocation source: %s" % event["invocationSource"] )
+        return failedResponse(
+            event, "Error in function - unrecognised invocation source: %s" %
+            event["invocationSource"])
+
 
 def log_update(event):
     print(json.dumps(model))
@@ -92,10 +108,10 @@ def log_update(event):
     intentName = intent["name"]
     slots = intent["slots"]
 
-    dayPrefix=""
-    rawValue=""
-    rawUnits=""
-    rawObject=""
+    dayPrefix = ""
+    rawValue = ""
+    rawUnits = ""
+    rawObject = ""
 
     if (slots):
         if (slots["DayPrefix"]):
@@ -124,7 +140,8 @@ def log_update(event):
 
     current_datetime = datetime.datetime.now().date()
     if (dayPrefix):
-        current_datetime = datetime.datetime.strptime(dayPrefix, '%Y-%m-%d').date()
+        current_datetime = datetime.datetime.strptime(dayPrefix,
+                                                      '%Y-%m-%d').date()
 
     if "sessionAttributes" in event:
         if event["sessionAttributes"] is None:
@@ -135,9 +152,11 @@ def log_update(event):
                 user_datetime = event["sessionAttributes"]["clientDate"]
                 print("Using client supplied date: " + user_datetime)
                 if dayPrefix:
-                    current_datetime = datetime.datetime.strptime(dayPrefix, '%Y-%m-%d').date()
+                    current_datetime = datetime.datetime.strptime(
+                        dayPrefix, '%Y-%m-%d').date()
                 else:
-                    current_datetime = datetime.datetime.strptime(user_datetime, '%Y-%m-%d').date()
+                    current_datetime = datetime.datetime.strptime(
+                        user_datetime, '%Y-%m-%d').date()
 
     print("current intent is: " + intentName)
     if "ResetAllMetrics" in intentName:
@@ -158,12 +177,20 @@ def log_update(event):
             return clearResponse(True)
         else:
             return clearResponse(False)
+    elif "Turnaround" in intentName:
+        turnaroundObject = slots['Object' + intentName]
+        turnaroundAction = slots['Verb' + intentName]
+        appendTurnaroundRawInfo(event["iserId"], intentName, dayPrefix,
+                                turnaroundObject, turnaroundAction)
     else:
-        appendRawInfo(event["userId"], intentName, dayPrefix, rawValue, rawUnits, rawObject)
+        # function to append row action to DynamoDB
+        appendRawInfo(event["userId"], intentName, dayPrefix, rawValue,
+                      rawUnits, rawObject)
 
+    # UPDATE AGGREGATE TABLE TO FOR TARGETS
     category = findCategoryFromIntent(model, bot, intentName)
     print(category)
-    print("found current category: " + category["name"]);
+    print("found current category: " + category["name"])
 
     update = obtainItem(event["userId"], current_datetime)
 
@@ -181,7 +208,8 @@ def log_update(event):
     updateItem(model, update)
     return closeResponse(update)
 
-def convertAmazonBaseType(bot,intent,rawValue):
+
+def convertAmazonBaseType(bot, intent, rawValue):
     category = findCategoryFromIntent(model, bot, intent)
     ISO8601_PERIOD_REGEX = re.compile(
         r"^(?P<sign>[+-])?"
@@ -214,7 +242,8 @@ def convertAmazonBaseType(bot,intent,rawValue):
                 groups[key] = float(groups[key][:-1].replace(',', '.'))
 
     print(groups)
-    totalMinutes = int((groups["days"] * 24 * 60) + (groups["hours"] * 60) + (groups["minutes"]))
+    totalMinutes = int((groups["days"] * 24 * 60) + (groups["hours"] * 60) +
+                       (groups["minutes"]))
 
     if (category["qty"]["convertTo"] == "MINUTES"):
         print("total minutes:" + str(totalMinutes))
@@ -224,12 +253,13 @@ def convertAmazonBaseType(bot,intent,rawValue):
         print("totalHours: " + str(totalHours))
         return totalHours
     elif (category["qty"]["convertTo"] == "DAYS"):
-        totalDays = int(math.ceil(float(totalMinutes)/(24.0*60.0)))
+        totalDays = int(math.ceil(float(totalMinutes) / (24.0 * 60.0)))
         print("totalDays: " + str(totalDays))
         return totalDays
     else:
         print("Undefined conversion: " + category["qty"]["convertTo"])
         return 0
+
 
 def log_dialogCodeHook(event):
     sessionAttributes = event["sessionAttributes"]
@@ -244,21 +274,24 @@ def log_dialogCodeHook(event):
 
     category = findCategoryFromIntent(model, bot, intent)
     for slot in slots:
-        if (slot == 'DayPrefix' and slots[slot]==None and category["date"]["default"] == "TODAY"):
+        if (slot == 'DayPrefix' and slots[slot] == None
+                and category["date"]["default"] == "TODAY"):
             slots[slot] = datetime.datetime.now().strftime('%Y-%m-%d')
-        elif (slot == "RawValueNUMBER" and slots[slot]==None and category["qty"]["default"] != "NA"):
+        elif (slot == "RawValueNUMBER" and slots[slot] == None
+              and category["qty"]["default"] != "NA"):
             slots[slot] = category["qty"]["default"]
-        elif (slot == "RawValueDURATION" and slots[slot]==None and category["qty"]["default"] != "NA"):
+        elif (slot == "RawValueDURATION" and slots[slot] == None
+              and category["qty"]["default"] != "NA"):
             slots[slot] = category["qty"]["default"]
         elif (slot == "RawValueDURATION" and slots[slot]):
-            slots[slot] = convertAmazonBaseType(bot,intent,slots[slot])
-        elif (slots[slot]==None):
-            if (slotToElicit==None):
+            slots[slot] = convertAmazonBaseType(bot, intent, slots[slot])
+        elif (slots[slot] == None):
+            if (slotToElicit == None):
                 slotToElicit = slot
             complete = False
     if (complete):
         response = {
-            'sessionAttributes':sessionAttributes,
+            'sessionAttributes': sessionAttributes,
             'dialogAction': {
                 'type': 'Delegate',
                 'slots': slots
@@ -269,98 +302,115 @@ def log_dialogCodeHook(event):
     else:
         return elicitSlotResponse(event, slotToElicit)
 
-def elicitSlotResponse(event,slot):
+
+def elicitSlotResponse(event, slot):
     sessionAttributes = event["sessionAttributes"]
-    intent= event["currentIntent"]["name"]
-    slots =  event["currentIntent"]["slots"]
+    intent = event["currentIntent"]["name"]
+    slots = event["currentIntent"]["slots"]
     response = {
-        'sessionAttributes':sessionAttributes,
+        'sessionAttributes': sessionAttributes,
         'dialogAction': {
             'type': 'ElicitSlot',
-            'intentName':intent,
-            'slotToElicit':slot,
+            'intentName': intent,
+            'slotToElicit': slot,
             'slots': slots
         }
     }
-    print ("Response (ElicitSlot): " + json.dumps(response))
+    print("Response (ElicitSlot): " + json.dumps(response))
     return response
+
 
 def delegateResponse(event):
     sessionAttributes = event["sessionAttributes"]
-    intent= event["currentIntent"]["name"]
-    slots =  event["currentIntent"]["slots"]
+    intent = event["currentIntent"]["name"]
+    slots = event["currentIntent"]["slots"]
     response = {
-        'sessionAttributes':sessionAttributes,
+        'sessionAttributes': sessionAttributes,
         'dialogAction': {
             'type': 'Delegate',
-            'intentName':intent,
+            'intentName': intent,
             'slots': slots
         }
     }
-    print ("Response (Delegate): " + json.dumps(response))
+    print("Response (Delegate): " + json.dumps(response))
     return response
+
 
 def closeResponse(event):
-    msg=summaryMessage(event,model)
-    response =     {
+    msg = summaryMessage(event, model)
+    response = {
         'dialogAction': {
             'type': 'Close',
             'fulfillmentState': 'Fulfilled',
-            'message': {'contentType': 'PlainText', 'content': msg}
+            'message': {
+                'contentType': 'PlainText',
+                'content': msg
+            }
         }
     }
-    print ("Response (Close): " + json.dumps(response))
+    print("Response (Close): " + json.dumps(response))
     return response
+
 
 def clearResponse(success):
-    msg=""
+    msg = ""
     if (success):
-        msg="I was able to clear the information previously stored."
+        msg = "I was able to clear the information previously stored."
     else:
-        msg="I could not find any information to clear."
+        msg = "I could not find any information to clear."
 
-    response =     {
+    response = {
         'dialogAction': {
             'type': 'Close',
             'fulfillmentState': 'Fulfilled',
-            'message': {'contentType': 'PlainText', 'content': msg}
+            'message': {
+                'contentType': 'PlainText',
+                'content': msg
+            }
         }
     }
-    print ("Response (Close): " + json.dumps(response))
+    print("Response (Close): " + json.dumps(response))
     return response
+
 
 def failedResponse(event, message):
     response = {
         'dialogAction': {
             'type': 'Close',
             'fulfillmentState': 'Failed',
-            'message': {'contentType': 'PlainText', 'content': message}
+            'message': {
+                'contentType': 'PlainText',
+                'content': message
+            }
         }
     }
     return response
 
+
 def summaryMessage(item, model):
     return "Great job, data stored."
 
+
 def defaultItem(model, userId, currentDatetime):
-    item = {
-        "userId": userId,
-        "reported_time": str(currentDatetime)
-    }
+    item = {"userId": userId, "reported_time": str(currentDatetime)}
     categories = findCategories(model)
     targetValues = findTargetValues(model)
     for t in categories:
         item[t] = 0
-        item["target_"+t] = targetValues[t]
+        item["target_" + t] = targetValues[t]
     return item
+
 
 def putItem(item):
     return tableAggregate.put_item(Item=item)
 
+
 def putItemRaw(item):
     return tableRaw.put_item(Item=item)
 
-def appendRawInfo(userId, intentName, dayPrefix, rawValue, rawUnits, rawObject):
+
+def appendRawInfo(userId, intentName, dayPrefix, rawValue, rawUnits,
+                  rawObject):
     item = {
         'userId': userId,
         'reported_time': str(datetime.datetime.now()),
@@ -374,6 +424,22 @@ def appendRawInfo(userId, intentName, dayPrefix, rawValue, rawUnits, rawObject):
     print(item)
     putItemRaw(item)
 
+
+def appendTurnaroundRawInfo(userId, intentName, dayPrefix, turnaroundObject,
+                            turnaroundAction):
+    item = {
+        'userId': userId,
+        'reported_time': str(datetime.datetime.now()),
+        'intentName': intentName,
+        'dayPrefix': dayPrefix,
+        'turnaroundObject': turnaroundObject,
+        'turnaroundAction': turnaroundAction
+    }
+    print("appending raw info")
+    print(item)
+    putItemRaw(item)
+
+
 def updateItem(model, item):
     print("Updating userId: " + item['userId'])
     print("Updating with content: ")
@@ -385,31 +451,28 @@ def updateItem(model, item):
 
     for t in categories:
         expression = expression + t + "=:i" + str(idx)
-        attributeValues[":i"+str(idx)] = Decimal(item.get(t, "0"))
-        if idx < (len(categories)-1):
-            expression = expression+", "
+        attributeValues[":i" + str(idx)] = Decimal(item.get(t, "0"))
+        if idx < (len(categories) - 1):
+            expression = expression + ", "
         idx = idx + 1
 
-    tableAggregate.update_item( Key={
+    tableAggregate.update_item(Key={
         'userId': item['userId'],
         'reported_time': str(item['reported_time'])
-        },
-        UpdateExpression=expression,
-        ExpressionAttributeValues=attributeValues,
-        ReturnValues="UPDATED_NEW"
-    )
+    },
+                               UpdateExpression=expression,
+                               ExpressionAttributeValues=attributeValues,
+                               ReturnValues="UPDATED_NEW")
     return
 
 
-def obtainItem(userId,reportTime):
+def obtainItem(userId, reportTime):
     try:
-        response = tableAggregate.get_item(
-            Key={
-                'userId': userId,
-                'reported_time': str(reportTime)
-            },
-            ConsistentRead=True
-        )
+        response = tableAggregate.get_item(Key={
+            'userId': userId,
+            'reported_time': str(reportTime)
+        },
+                                           ConsistentRead=True)
     except ClientError as e:
         print(e.response['Error']['Message'])
         return
@@ -428,17 +491,14 @@ def deleteItem(item):
         Key={
             'userId': item["userId"],
             'reported_time': str(item["reported_time"])
-        }
-    )
+        })
 
 
 def deleteRawItem(item):
-    return tableRaw.delete_item(
-        Key={
-            'userId': item["userId"],
-            'reported_time': str(item["reported_time"])
-        }
-    )
+    return tableRaw.delete_item(Key={
+        'userId': item["userId"],
+        'reported_time': str(item["reported_time"])
+    })
 
 
 def deleteItemsForUser(userid):
@@ -447,17 +507,14 @@ def deleteItemsForUser(userid):
     count = 0
 
     response = tableAggregate.query(
-        KeyConditionExpression=Key('userId').eq(userid)
-    )
+        KeyConditionExpression=Key('userId').eq(userid))
     for i in response['Items']:
         deleteItem(i)
         count += 1
 
     while 'LastEvaluatedKey' in response:
-        response = table.query(
-            KeyConditionExpression=Key('userId').eq(userid),
-            ExclusiveStartKey=response['LastEvaluatedKey']
-        )
+        response = table.query(KeyConditionExpression=Key('userId').eq(userid),
+                               ExclusiveStartKey=response['LastEvaluatedKey'])
         for i in response['Items']:
             deleteItem(i)
             count += 1
@@ -469,24 +526,20 @@ def deleteItemsForUser(userid):
         return False
 
 
-def deleteRawItemsForUserOnDay(userid,dayPrefix):
+def deleteRawItemsForUserOnDay(userid, dayPrefix):
     # Scan the table and delete all items which match the provided userId
     print('Deleting raw rows...')
     count = 0
 
-    response = tableRaw.query(
-        KeyConditionExpression=Key('userId').eq(userid)
-    )
+    response = tableRaw.query(KeyConditionExpression=Key('userId').eq(userid))
     for i in response['Items']:
         if i['dayPrefix'] == dayPrefix:
             deleteRawItem(i)
         count += 1
 
     while 'LastEvaluatedKey' in response:
-        response = table.query(
-            KeyConditionExpression=Key('userId').eq(userid),
-            ExclusiveStartKey=response['LastEvaluatedKey']
-        )
+        response = table.query(KeyConditionExpression=Key('userId').eq(userid),
+                               ExclusiveStartKey=response['LastEvaluatedKey'])
         for i in response['Items']:
             if i['dayPrefix'] == dayPrefix:
                 deleteRawItem(i)
@@ -504,18 +557,14 @@ def deleteRawItemsForUser(userid):
     print('Deleting raw rows...')
     count = 0
 
-    response = tableRaw.query(
-        KeyConditionExpression=Key('userId').eq(userid)
-    )
+    response = tableRaw.query(KeyConditionExpression=Key('userId').eq(userid))
     for i in response['Items']:
         deleteRawItem(i)
         count += 1
 
     while 'LastEvaluatedKey' in response:
-        response = table.query(
-            KeyConditionExpression=Key('userId').eq(userid),
-            ExclusiveStartKey=response['LastEvaluatedKey']
-        )
+        response = table.query(KeyConditionExpression=Key('userId').eq(userid),
+                               ExclusiveStartKey=response['LastEvaluatedKey'])
         for i in response['Items']:
             deleteRawItem(i)
             count += 1
