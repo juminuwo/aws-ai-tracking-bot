@@ -180,8 +180,8 @@ def log_update(event):
     elif "Turnaround" in intentName:
         turnaroundObject = slots['Object' + intentName]
         turnaroundAction = slots['Verb' + intentName]
-        appendTurnaroundRawInfo(event["iserId"], intentName, dayPrefix,
-                                turnaroundObject, turnaroundAction)
+        appendTurnaroundRawInfo(event["iserId"], intentName, turnaroundObject,
+                                turnaroundAction)
     else:
         # function to append row action to DynamoDB
         appendRawInfo(event["userId"], intentName, dayPrefix, rawValue,
@@ -425,13 +425,12 @@ def appendRawInfo(userId, intentName, dayPrefix, rawValue, rawUnits,
     putItemRaw(item)
 
 
-def appendTurnaroundRawInfo(userId, intentName, dayPrefix, turnaroundObject,
+def appendTurnaroundRawInfo(userId, intentName, turnaroundObject,
                             turnaroundAction):
     item = {
         'userId': userId,
         'reported_time': str(datetime.datetime.now()),
         'intentName': intentName,
-        'dayPrefix': dayPrefix,
         'turnaroundObject': turnaroundObject,
         'turnaroundAction': turnaroundAction
     }
