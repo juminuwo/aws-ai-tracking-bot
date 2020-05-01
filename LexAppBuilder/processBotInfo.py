@@ -116,18 +116,6 @@ def log_update(event):
     rawUnits = ""
     rawObject = ""
 
-    # UPDATE GATE META DATA
-    if "UpdateGateData" in intentName:
-        update = obtainGateItem(event["userId"])
-        if update:
-            print("found current item for user")
-        else:
-            update = defaultGateItem(event["userId"])
-            putGateItem(update)
-        update['GateNumber'] = slots['GateNUMBER']
-        update['Airport'] = slots['Airport']
-        update['FlightNumber'] = slots['FlightNumber']
-        updateGateItem(update)
 
     if (slots):
         if ("DayPrefix" in slots):
@@ -205,6 +193,18 @@ def log_update(event):
         turnaroundAction = slots['Verb' + intentName]
         appendTurnaroundRawInfo(event["userId"], intentName, turnaroundObject,
                                 turnaroundAction, update['Airport'], update['GateNumber'], update['FlightNumber'])
+    # UPDATE GATE META DATA
+    elif "UpdateGateData" in intentName:
+        update = obtainGateItem(event["userId"])
+        if update:
+            print("found current item for user")
+        else:
+            update = defaultGateItem(event["userId"])
+            putGateItem(update)
+        update['GateNumber'] = slots['GateNUMBER']
+        update['Airport'] = slots['Airport']
+        update['FlightNumber'] = slots['FlightNumber']
+        updateGateItem(update)
     else:
         # function to append row action to DynamoDB
         appendRawInfo(event["userId"], intentName, dayPrefix, rawValue,
