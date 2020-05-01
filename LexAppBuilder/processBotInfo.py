@@ -36,6 +36,7 @@ class DecimalEncoder(json.JSONEncoder):
 def setTableNames(bot):
     global tableRaw
     global tableAggregate
+    global tableGate
     tableRaw = dynamodb.Table(bot["name"] + "-Raw")
     tableAggregate = dynamodb.Table(bot["name"] + "-Aggregate")
     tableGate = dynamodb.Table(bot["name"] + "-Gate")
