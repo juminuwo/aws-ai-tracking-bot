@@ -203,13 +203,17 @@ def log_update(event):
         else:
             update = defaultGateItem(event["userId"])
             putGateItem(update)
-        if slots['Airport']:
-            update['Airport'] = slots['Airport']
-        if slots['FlightNumber']:
-            update['FlightNumber'] = slots['FlightNumber']
-        if slots['GateNUMBER']:
-            update['GateNumber'] = slots['GateNUMBER']
-        msg = updateGateItem(update)
+        if not slots['Airport'] and not slots['FlightNumber'] and not slots[
+                'GateNUMBER']:
+            msg = 'Not understood, please try again.'
+        else:
+            if slots['Airport']:
+                update['Airport'] = slots['Airport']
+            if slots['FlightNumber']:
+                update['FlightNumber'] = slots['FlightNumber']
+            if slots['GateNUMBER']:
+                update['GateNumber'] = slots['GateNUMBER']
+            msg = updateGateItem(update)
     else:
         # function to append row action to DynamoDB
         appendRawInfo(event["userId"], intentName, dayPrefix, rawValue,
@@ -435,8 +439,8 @@ def defaultGateItem(userId):
     item = {
         "userId": userId,
         "GateNumber": -1,
-        "FlightNumber": "NA",
-        "Airport": "NA"
+        "FlightNumber": "Null",
+        "Airport": "Null"
     }
     return item
 
