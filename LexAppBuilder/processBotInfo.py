@@ -211,7 +211,7 @@ def log_update(event):
                       rawUnits, rawObject)
 
     # UPDATE AGGREGATE TABLE TO FOR TARGETS
-    if "Turnaround" not in intentName or "Gate" not in intentName:
+    if "Turnaround" not in intentName and "Gate" not in intentName:
         update = obtainItem(event["userId"], current_datetime)
         category = findCategoryFromIntent(model, bot, intentName)
         print(category)
