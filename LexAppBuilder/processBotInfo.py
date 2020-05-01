@@ -200,7 +200,7 @@ def log_update(event):
             print("found current item for user")
         else:
             update = defaultGateItem(event["userId"])
-            putItem(update)
+            putGateItem(update)
         turnaroundObject = slots['Object' + intentName]
         turnaroundAction = slots['Verb' + intentName]
         appendTurnaroundRawInfo(event["userId"], intentName, turnaroundObject,
