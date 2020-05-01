@@ -191,9 +191,10 @@ def log_update(event):
             putGateItem(update)
         turnaroundObject = slots['Object' + intentName]
         turnaroundAction = slots['Verb' + intentName]
-        msg = appendTurnaroundRawInfo(event["userId"], intentName, turnaroundObject,
-                                turnaroundAction, update['Airport'],
-                                update['GateNumber'], update['FlightNumber'])
+        msg = appendTurnaroundRawInfo(event["userId"], intentName,
+                                      turnaroundObject, turnaroundAction,
+                                      update['Airport'], update['GateNumber'],
+                                      update['FlightNumber'])
     # UPDATE GATE META DATA
     elif "UpdateGateData" in intentName:
         update = obtainGateItem(event["userId"])
@@ -208,7 +209,7 @@ def log_update(event):
             update['FlightNumber'] = slots['FlightNumber']
         if slots['GateNUMBER']:
             update['GateNumber'] = slots['GateNUMBER']
-        updateGateItem(update)
+        msg = updateGateItem(update)
     else:
         # function to append row action to DynamoDB
         appendRawInfo(event["userId"], intentName, dayPrefix, rawValue,
@@ -481,7 +482,7 @@ def appendTurnaroundRawInfo(userId, intentName, turnaroundObject,
         'GateNumber': GateNumber,
         'FlightNumber': FlightNumber
     }
-    msg = 'turnaroundObject: `{}`, turnaroundAction: `{}`, reported_time: `{}`'.format(
+    msg = 'Thank you, data stored. {{turnaroundObject: `{}`, turnaroundAction: `{}`, reported_time: `{}`}}'.format(
         turnaroundObject, turnaroundAction, item['reported_time'])
     print("appending raw info")
     print(item)
@@ -535,6 +536,8 @@ def updateGateItem(item):
                           UpdateExpression=expression,
                           ExpressionAttributeValues=attributeValues,
                           ReturnValues="UPDATED_NEW")
+    msg = "Thank you, user updated: {}".format(str(attributeValues))
+    return msg
 
 
 def obtainItem(userId, reportTime):
