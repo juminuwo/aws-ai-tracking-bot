@@ -110,12 +110,12 @@ def log_update(event):
     intent = event["currentIntent"]
     intentName = intent["name"]
     slots = intent["slots"]
+    msg = None
 
     dayPrefix = ""
     rawValue = ""
     rawUnits = ""
     rawObject = ""
-
 
     if (slots):
         if ("DayPrefix" in slots):
@@ -191,8 +191,9 @@ def log_update(event):
             putGateItem(update)
         turnaroundObject = slots['Object' + intentName]
         turnaroundAction = slots['Verb' + intentName]
-        appendTurnaroundRawInfo(event["userId"], intentName, turnaroundObject,
-                                turnaroundAction, update['Airport'], update['GateNumber'], update['FlightNumber'])
+        msg = appendTurnaroundRawInfo(event["userId"], intentName, turnaroundObject,
+                                turnaroundAction, update['Airport'],
+                                update['GateNumber'], update['FlightNumber'])
     # UPDATE GATE META DATA
     elif "UpdateGateData" in intentName:
         update = obtainGateItem(event["userId"])
@@ -233,7 +234,7 @@ def log_update(event):
 
         updateItem(model, update)
 
-    return closeResponse(update)
+    return closeResponse(update, msg)
 
 
 def convertAmazonBaseType(bot, intent, rawValue):
@@ -363,8 +364,9 @@ def delegateResponse(event):
     return response
 
 
-def closeResponse(event):
-    msg = summaryMessage(event, model)
+def closeResponse(event, msg=None):
+    if msg is None:
+        msg = summaryMessage(event, model)
     response = {
         'dialogAction': {
             'type': 'Close',
@@ -467,7 +469,8 @@ def appendRawInfo(userId, intentName, dayPrefix, rawValue, rawUnits,
 
 
 def appendTurnaroundRawInfo(userId, intentName, turnaroundObject,
-                            turnaroundAction, Airport, GateNumber, FlightNumber):
+                            turnaroundAction, Airport, GateNumber,
+                            FlightNumber):
     item = {
         'userId': userId,
         'reported_time': str(datetime.datetime.now()),
@@ -478,9 +481,12 @@ def appendTurnaroundRawInfo(userId, intentName, turnaroundObject,
         'GateNumber': GateNumber,
         'FlightNumber': FlightNumber
     }
+    msg = 'turnaroundObject: `{}`, turnaroundAction: `{}`, reported_time: `{}`'.format(
+        turnaroundObject, turnaroundAction, item['reported_time'])
     print("appending raw info")
     print(item)
     putItemRaw(item)
+    return msg
 
 
 def updateItem(model, item):
@@ -556,7 +562,7 @@ def obtainGateItem(userId):
         response = tableGate.get_item(Key={
             'userId': userId,
         },
-                                           ConsistentRead=True)
+                                      ConsistentRead=True)
     except ClientError as e:
         print(e.response['Error']['Message'])
         return

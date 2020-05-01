@@ -320,9 +320,9 @@
       }
     ],
     "ui": {
-      "titleBar": "Resolutions",
-      "initialText": "You can ask me to record your Resolution activities. For example enter, `I gave 3 pairs of shoes to charity today` or `Yesterday I walked at the heart walk`.",
-      "initialSpeechInstruction": "Say phrases like `I gave 20 dollars to charity today`."
+      "titleBar": "Turnaround Voice Input",
+      "initialText": "Please say your object and action e.g. `Baggage connected`.",
+      "initialSpeechInstruction": "Say phrases like `baggage connected`."
     }
   }
 }
