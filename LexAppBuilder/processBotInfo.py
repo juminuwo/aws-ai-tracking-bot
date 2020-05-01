@@ -523,11 +523,13 @@ def updateGateItem(item):
     expression = "set "
     idx = 0
     attributeValues = {}
+    msgValues = {}
     categories = ['GateNumber', 'Airport', 'FlightNumber']
 
     for t in categories:
         expression += t + "=:i" + str(idx)
         attributeValues[":i" + str(idx)] = str(item.get(t))
+        msgValues[t] = str(item.get(t))
         if idx < (len(categories) - 1):
             expression = expression + ", "
         idx += 1
@@ -536,7 +538,7 @@ def updateGateItem(item):
                           UpdateExpression=expression,
                           ExpressionAttributeValues=attributeValues,
                           ReturnValues="UPDATED_NEW")
-    msg = "Thank you, user updated: {}".format(str(attributeValues))
+    msg = "Thank you, user updated: {}".format(str(msgValues))
     return msg
 
 
