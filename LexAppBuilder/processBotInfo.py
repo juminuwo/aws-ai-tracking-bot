@@ -201,9 +201,12 @@ def log_update(event):
         else:
             update = defaultGateItem(event["userId"])
             putGateItem(update)
-        update['GateNumber'] = slots['GateNUMBER']
-        update['Airport'] = slots['Airport']
-        update['FlightNumber'] = slots['FlightNumber']
+        if slots['Airport']:
+            update['Airport'] = slots['Airport']
+        if slots['FlightNumber']:
+            update['FlightNumber'] = slots['FlightNumber']
+        if slots['GateNUMBER']:
+            update['GateNumber'] = slots['GateNUMBER']
         updateGateItem(update)
     else:
         # function to append row action to DynamoDB
