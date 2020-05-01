@@ -123,7 +123,7 @@ def log_update(event):
             print("found current item for user")
         else:
             update = defaultGateItem(event["userId"])
-            putItem(update)
+            putGateItem(update)
         update['GateNumber'] = slots['GateNUMBER']
         update['Airport'] = slots['Airport']
         update['FlightNumber'] = slots['FlightNumber']
