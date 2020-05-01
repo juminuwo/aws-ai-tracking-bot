@@ -19,6 +19,7 @@ modelFileName = "model.json"
 model = ""
 tableRaw = ""
 tableAggregate = ""
+tableGate = ""
 
 
 # Helper class to convert a DynamoDB item to JSON.
@@ -37,6 +38,7 @@ def setTableNames(bot):
     global tableAggregate
     tableRaw = dynamodb.Table(bot["name"] + "-Raw")
     tableAggregate = dynamodb.Table(bot["name"] + "-Aggregate")
+    tableGate = dynamodb.Table(bot["name"] + "-Gate")
 
 
 def loadModelFromFile(name):
@@ -113,6 +115,19 @@ def log_update(event):
     rawUnits = ""
     rawObject = ""
 
+    # UPDATE GATE META DATA
+    if "UpdateGateData" in intentName:
+        update = obtainGateItem(event["userId"])
+        if update:
+            print("found current item for user")
+        else:
+            update = defaultGateItem(event["userId"])
+            putItem(update)
+        update['GateNumber'] = slots['GateNUMBER']
+        update['Airport'] = slots['Airport']
+        update['FlightNumber'] = slots['FlightNumber']
+        updateGateItem(update)
+
     if (slots):
         if ("DayPrefix" in slots):
             if (slots["DayPrefix"]):
@@ -179,22 +194,27 @@ def log_update(event):
         else:
             return clearResponse(False)
     elif "Turnaround" in intentName:
+        update = obtainGateItem(event["userId"])
+        if update:
+            print("found current item for user")
+        else:
+            update = defaultGateItem(event["userId"])
+            putItem(update)
         turnaroundObject = slots['Object' + intentName]
         turnaroundAction = slots['Verb' + intentName]
         appendTurnaroundRawInfo(event["userId"], intentName, turnaroundObject,
-                                turnaroundAction)
+                                turnaroundAction, update['Airport'], update['GateNumber'], update['FlightNumber'])
     else:
         # function to append row action to DynamoDB
         appendRawInfo(event["userId"], intentName, dayPrefix, rawValue,
                       rawUnits, rawObject)
 
     # UPDATE AGGREGATE TABLE TO FOR TARGETS
-    update = obtainItem(event["userId"], current_datetime)
-    if "Turnaround" not in intentName:
+    if "Turnaround" not in intentName or "Gate" not in intentName:
+        update = obtainItem(event["userId"], current_datetime)
         category = findCategoryFromIntent(model, bot, intentName)
         print(category)
         print("found current category: " + category["name"])
-
 
         if update:
             print("found current item for user")
@@ -208,6 +228,7 @@ def log_update(event):
             update[category["name"]] = int(rawValue)
 
         updateItem(model, update)
+
     return closeResponse(update)
 
 
@@ -403,8 +424,22 @@ def defaultItem(model, userId, currentDatetime):
     return item
 
 
+def defaultGateItem(userId):
+    item = {
+        "userId": userId,
+        "GateNumber": -1,
+        "FlightNumber": "NA",
+        "Airport": "NA"
+    }
+    return item
+
+
 def putItem(item):
     return tableAggregate.put_item(Item=item)
+
+
+def putGateItem(item):
+    return tableGate.put_item(Item=item)
 
 
 def putItemRaw(item):
@@ -428,13 +463,16 @@ def appendRawInfo(userId, intentName, dayPrefix, rawValue, rawUnits,
 
 
 def appendTurnaroundRawInfo(userId, intentName, turnaroundObject,
-                            turnaroundAction):
+                            turnaroundAction, Airport, GateNumber, FlightNumber):
     item = {
         'userId': userId,
         'reported_time': str(datetime.datetime.now()),
         'intentName': intentName,
         'turnaroundObject': turnaroundObject,
-        'turnaroundAction': turnaroundAction
+        'turnaroundAction': turnaroundAction,
+        'Airport': Airport,
+        'GateNumber': GateNumber,
+        'FlightNumber': FlightNumber
     }
     print("appending raw info")
     print(item)
@@ -467,11 +505,52 @@ def updateItem(model, item):
     return
 
 
+def updateGateItem(item):
+    print("Updating userId: " + item['userId'])
+    print("Updating with content: ")
+    print(item)
+    expression = "set "
+    idx = 0
+    attributeValues = {}
+    categories = ['GateNumber', 'Airport', 'FlightNumber']
+
+    for t in categories:
+        expression += t + "=:i" + str(idx)
+        attributeValues[":i" + str(idx)] = str(item.get(t))
+        if idx < (len(categories) - 1):
+            expression = expression + ", "
+        idx += 1
+
+    tableGate.update_item(Key={'userId': item['userId']},
+                          UpdateExpression=expression,
+                          ExpressionAttributeValues=attributeValues,
+                          ReturnValues="UPDATED_NEW")
+
+
 def obtainItem(userId, reportTime):
     try:
         response = tableAggregate.get_item(Key={
             'userId': userId,
             'reported_time': str(reportTime)
+        },
+                                           ConsistentRead=True)
+    except ClientError as e:
+        print(e.response['Error']['Message'])
+        return
+    else:
+        try:
+            item = response['Item']
+            return item
+        except:
+            return
+        else:
+            return
+
+
+def obtainGateItem(userId):
+    try:
+        response = tableGate.get_item(Key={
+            'userId': userId,
         },
                                            ConsistentRead=True)
     except ClientError as e:

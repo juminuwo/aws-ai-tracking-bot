@@ -247,6 +247,7 @@ Resources:
                                 - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*-Attribute"
                                 - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*-Aggregate"
                                 - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*-Raw"
+                                - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*-Gate"
                             Condition:
                                 ForAllValues:StringEquals:
                                         dynamodb:LeadingKeys:
@@ -316,6 +317,7 @@ Resources:
                                 - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*-Attribute"
                                 - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*-Aggregate"
                                 - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*-Raw"
+                                - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/*-Gate"
                             Condition:
                                 ForAllValues:StringEquals:
                                         dynamodb:LeadingKeys:

@@ -61,6 +61,7 @@ Resources:
                   - !Sub "arn:aws:dynamodb:*:*:table/${BaseModelName}-Attribute"
                   - !Sub "arn:aws:dynamodb:*:*:table/${BaseModelName}-Raw"
                   - !Sub "arn:aws:dynamodb:*:*:table/${BaseModelName}-Aggregate"
+                  - !Sub "arn:aws:dynamodb:*:*:table/${BaseModelName}-Gate"
               - Effect: "Allow"
                 Action: "logs:*"
                 Resource: "*"
@@ -133,6 +134,23 @@ Resources:
         ReadCapacityUnits: "10"
         WriteCapacityUnits: "10"
       TableName: !Sub "${BaseModelName}-Aggregate"
+
+  GateDynamoDBTable:
+    DependsOn: rawDynamoDBTable
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      AttributeDefinitions:
+        -
+          AttributeName: "userId"
+          AttributeType: "S"
+      KeySchema:
+        -
+          AttributeName: "userId"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: "10"
+        WriteCapacityUnits: "10"
+      TableName: !Sub "${BaseModelName}-Gate"
 
   lambdaFunction:
     DependsOn: lambdaRole
