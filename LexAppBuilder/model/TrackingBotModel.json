@@ -321,8 +321,8 @@
     ],
     "ui": {
       "titleBar": "Turnaround Voice Input",
-      "initialText": "Please say your object and action e.g. `Baggage connected`.",
-      "initialSpeechInstruction": "Say phrases like `baggage connected`."
+      "initialText": "Please record your turnaround events e.g. `baggage connected`, `passenger bridge connected`, `pushback stopped`.",
+      "initialSpeechInstruction": "E.g. `baggage connected`."
     }
   }
 }

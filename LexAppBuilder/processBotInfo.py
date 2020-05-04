@@ -189,8 +189,11 @@ def log_update(event):
         else:
             update = defaultGateItem(event["userId"])
             putGateItem(update)
-        turnaroundObject = slots['Object' + intentName]
-        turnaroundAction = slots['Verb' + intentName]
+        for name in slots:
+            if 'Object' in name and slots[name]:
+                turnaroundObject = slots[name]
+            elif 'Verb' in name and slots[name]:
+                turnaroundAction = slots[name]
         msg = appendTurnaroundRawInfo(event["userId"], intentName,
                                       turnaroundObject, turnaroundAction,
                                       update['Airport'], update['GateNumber'],
@@ -486,7 +489,7 @@ def appendTurnaroundRawInfo(userId, intentName, turnaroundObject,
         'GateNumber': GateNumber,
         'FlightNumber': FlightNumber
     }
-    msg = 'Thank you, data stored. {{turnaroundObject: `{}`, turnaroundAction: `{}`, reported_time: `{}`}}'.format(
+    msg = 'Thank you, event `{}, {}` has been recorded, at time `{}`'.format(
         turnaroundObject, turnaroundAction, item['reported_time'])
     print("appending raw info")
     print(item)
@@ -495,7 +498,7 @@ def appendTurnaroundRawInfo(userId, intentName, turnaroundObject,
 
 
 def updateItem(model, item):
-    print("Updating userId: " + item['userId'])
+    print("Updating user information: " + item['userId'])
     print("Updating with content: ")
     print(item)
     categories = findCategories(model)
