@@ -489,8 +489,8 @@ def appendTurnaroundRawInfo(userId, intentName, turnaroundObject,
         'GateNumber': GateNumber,
         'FlightNumber': FlightNumber
     }
-    msg = 'Thank you, event `{}, {}` has been recorded, at time `{}`'.format(
-        turnaroundObject, turnaroundAction, item['reported_time'])
+    msg = 'The event `{}, {}` has been recorded at time `{}`.'.format(
+        turnaroundObject, turnaroundAction, item['reported_time'][:-7])
     print("appending raw info")
     print(item)
     putItemRaw(item)

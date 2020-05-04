@@ -321,7 +321,7 @@
     ],
     "ui": {
       "titleBar": "Turnaround Voice Input",
-      "initialText": "Please record your turnaround events e.g. `baggage connected`, `passenger bridge connected`, `pushback stopped`.",
+      "initialText": "Please record your turnaround events e.g. `baggage connected`, `airplane appeared`, `pushback stopped`.",
       "initialSpeechInstruction": "E.g. `baggage connected`."
     }
   }
